@@ -29,7 +29,6 @@ class OddReader():
             if "markets" in match.keys():
                 if len(match["markets"]) > 0:
                     match_info = {}
-                    match_info["sport"] = match["competition"]["sport"]["name"]
                     match_info["competition"] = match["competition"]["name"]
                     match_info["label"] = match["name"]
                     match_info["date"] = self._convert_date_to_timestamp(match["date"])
