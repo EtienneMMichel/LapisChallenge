@@ -78,7 +78,7 @@ graph_analysis = html.Div([
 
 
 analysis = html.Div([
-    dbc.Button("Open Config", id="portfolio_optimizer-open_offcanvas", n_clicks=0),
+    dbc.Button("Config", id="portfolio_optimizer-open_offcanvas", n_clicks=0),
     dcc.Store(id='portfolio_optimizer-results'),
 ])
 
@@ -110,14 +110,16 @@ def toggle_offcanvas(n1, is_open):
         Input("portfolio_optimizer-launch_button", "n_clicks")
     ]
     )
-def results(forecaster_name:str, optimizers_name:list[str], sport:str, zones:list[str], competitions:list[str], dates: list[int], launch_button):
+def results(forecaster_name:str, optimizers_name:list[str], sport:str, zone:str, competitions:list[str], dates: list[int], launch_button):
     if not launch_button is None:
         forecaster_condition = forecaster_name is None
         optimizer_condition = len(optimizers_name) == 0
         sport_condition = sport is None
         if forecaster_condition or optimizer_condition or sport_condition:
             return {}
-        res =  api_provider.get_optimizer_backtest(sport, dates, forecaster_name, optimizers_name, zones, competitions)
+        
+        dates = [int(f"20{dates[0]}"), int(f"20{dates[1]}")]
+        res =  api_provider.get_optimizer_backtest(sport, dates, forecaster_name, optimizers_name, zone, competitions)
         return res
     else:
         return {}
