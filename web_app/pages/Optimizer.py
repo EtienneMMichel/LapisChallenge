@@ -5,6 +5,8 @@ from dash import Input, Output, State, html, callback, dcc
 from .utils import api_provider
 from .utils import FORECASTER_MODELS, OPTIMIZER_MODELS, SPORTS, MIN_YEAR, MAX_YEAR, ZONES, COMPETITIONS
 
+import json
+
 dash.register_page(__name__)
 
 
@@ -115,16 +117,7 @@ def results(forecaster_name:str, optimizers_name:list[str], sport:str, zones:lis
         sport_condition = sport is None
         if forecaster_condition or optimizer_condition or sport_condition:
             return {}
-        payload = {
-            "sport":sport,
-            "start_year":dates[0],
-            "end_year":dates[1],
-            "zones":zones,
-            "competitions":competitions,
-            "forecaster_name":forecaster_name,
-            "optimizers_name":optimizers_name
-        }
-        res =  api_provider.get_optimizer_backtest(payload)
+        res =  api_provider.get_optimizer_backtest(sport, dates, forecaster_name, optimizers_name, zones, competitions)
         return res
     else:
         return {}
