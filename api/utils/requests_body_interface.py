@@ -15,6 +15,12 @@ class PredsBody(BaseModel):
     modelName:str
     others: dict| None = None
     modelSave:str | None = None
+    date: int | None = None
+
+
+class AllocBody(BaseModel):
+    preds: list[list[float]]
+    odds: list[list[float]]
 
 
 class OptiBacktestBody(BaseModel):
@@ -24,5 +30,5 @@ class OptiBacktestBody(BaseModel):
     forecaster_name:str
     forecaster_save:str | None = None
     optimizers_name:list[str]
-    zones: list[str]| None = None
+    zone: str| None = None
     competitions:list[str] | None = None

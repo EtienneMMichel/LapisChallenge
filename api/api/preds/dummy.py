@@ -1,4 +1,8 @@
 from .base_model import PredBaseModel
+from utils import PredsBody
+import numpy as np
+
+NB_MATCH_ISSUES = 3 # will change according to the sport
 
 
 class Dummy(PredBaseModel):
@@ -12,10 +16,15 @@ class Dummy(PredBaseModel):
         return raw_data
     
     def preds(self, data):
-        return {}
+        preds = np.random.rand(NB_MATCH_ISSUES).tolist()
+        s = sum(preds)
+        return [pred/s for pred in preds]
 
-    def act(self, request_data):
-        raw_data = self.retrieve_data(request_data)
-        data = self.get_data(raw_data)
-        preds = self.preds(data)
+    def act(self, pred_inputs):
+        pred_inputs = ([pred_inputs] if type(pred_inputs) is PredsBody else pred_inputs)
+        preds = []
+        for pred_input in pred_inputs:
+            raw_data = self.retrieve_data(pred_input)
+            data = self.get_data(raw_data)
+            preds.append(self.preds(data))
         return preds

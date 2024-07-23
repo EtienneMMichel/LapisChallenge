@@ -47,7 +47,7 @@ async def get_preds(request:PredsBody) -> dict:
     return res
 
 @app.post("/get_optimizer_backtest")
-async def get_optimizer_backtest(request:OptiBacktestBody) -> dict:
+async def get_optimizer_backtest(request:OptiBacktestBody) ->dict:
     forecaster_model = eval(f"preds.{request.forecaster_name}({request.forecaster_save})")
     optimizer_models = [eval(f"optimizer.{model_name}()") for model_name in request.optimizers_name]
     backtester_model = backtester.OptimizerBacktester(forecaster_model=forecaster_model,
@@ -55,9 +55,10 @@ async def get_optimizer_backtest(request:OptiBacktestBody) -> dict:
                                      sport=request.sport,
                                      start_year=request.start_year,
                                      end_year=request.end_year,
-                                     zones=request.zones,
+                                     zone=request.zone,
                                      competitions=request.competitions)
     res = backtester_model.process()
+    res = {"data":res}
     return res
 
 
