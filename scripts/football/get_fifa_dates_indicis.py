@@ -7,7 +7,7 @@ from tqdm import tqdm
 import time
 import datetime
 
-SAVING_PATH = "DATA/fifa_dates_indecis.json"
+SAVING_PATH = "DATA/football/fifa_dates_indecis.json"
 
 def get_date(raw_date):
     month_mapping = {
