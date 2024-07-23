@@ -2,9 +2,10 @@ import json
 import logging
 from fastapi import FastAPI
 import uvicorn
-from utils import GetDataBody, GetStatsBody, PredsBody
+from utils import GetDataBody, GetStatsBody, PredsBody, OptiBacktestBody
 
-from api import scrapper, stats, preds
+from api import scrapper, stats, preds, backtester, optimizer
+
 
 
 app = FastAPI(root_path="/prod")
@@ -44,5 +45,21 @@ async def get_preds(request:PredsBody) -> dict:
     model = eval(f"preds.{request.modelName}({request.modelSave})")
     res = model.act(request)
     return res
+
+@app.post("/get_optimizer_backtest")
+async def get_optimizer_backtest(request:OptiBacktestBody) -> dict:
+    forecaster_model = eval(f"preds.{request.forecaster_name}({request.forecaster_save})")
+    optimizer_models = [eval(f"optimizer.{model_name}()") for model_name in request.optimizers_name]
+    backtester_model = backtester.OptimizerBacktester(forecaster_model=forecaster_model,
+                                     optimizer_model=optimizer_models,
+                                     sport=request.sport,
+                                     start_year=request.start_year,
+                                     end_year=request.end_year,
+                                     zones=request.zones,
+                                     competitions=request.competitions)
+    res = backtester_model.process()
+    return res
+
+
 if __name__ == "__main__":
     uvicorn.run("app:app", port=5000, log_level="info")
