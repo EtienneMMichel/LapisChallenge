@@ -18,7 +18,7 @@ class PredsBody(BaseModel):
     date: int | None = None
 
 
-class AllocBody(BaseModel):
+class PickerBody(BaseModel):
     preds: list[list[float]]
     odds: list[list[float]]
 

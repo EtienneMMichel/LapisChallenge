@@ -136,17 +136,19 @@ def results(forecaster_name:str, optimizers_name:list[str], sport:str, zone:str,
 def update_graph(jsonified_data):
     data = {}
     data["date"] = [r["date"] for r in jsonified_data]
-    for optimizer in list(jsonified_data[0]["rewards"].keys()):
+    optimizers_name = list(jsonified_data[0]["rewards"].keys())
+    for optimizer in optimizers_name:
         rewards =  [r["rewards"][optimizer] for r in jsonified_data]
         data[f"rewards_{optimizer}"] = rewards
+
         portfolio = [1]
         for r in rewards[:-1]:
-            portfolio.append(portfolio[-1]+r)
+            portfolio.append(portfolio[-1]*(1+r))
         data[f"portfolio_{optimizer}"] = portfolio
         
 
     
     df = pd.DataFrame(data)
-    fig = px.line(df, x="date", y="portfolio_dummy", title='Life expectancy in Canada')
+    fig = px.line(df, x="date", y="rewards_dummy", title='Life expectancy in Canada')
     
     return fig
