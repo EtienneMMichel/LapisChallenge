@@ -52,7 +52,7 @@ class Backtester():
         start_date = datetime(start_year, 1,1,0,0)        
         end_date = datetime(end_year, 1,1,0,0)   
         dataset = dataset.loc[(dataset['date'] > start_date) & (dataset['date'] <= end_date)]
-
+        dataset = dataset.sort_values(by='date')
         self.dataset = dataset.to_dict('records')
 
     def dataset_gen(self):

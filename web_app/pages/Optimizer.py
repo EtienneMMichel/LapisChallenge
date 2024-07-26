@@ -1,9 +1,11 @@
 import dash
 import dash_bootstrap_components as dbc
 from dash import Input, Output, State, html, callback, dcc
+import pandas as pd
+import plotly.express as px
 
-from .utils import api_provider
-from .utils import FORECASTER_MODELS, OPTIMIZER_MODELS, SPORTS, MIN_YEAR, MAX_YEAR, ZONES, COMPETITIONS
+from utils import api_provider
+from utils import FORECASTER_MODELS, OPTIMIZER_MODELS, SPORTS, MIN_YEAR, MAX_YEAR, ZONES, COMPETITIONS
 
 import json
 
@@ -80,6 +82,7 @@ graph_analysis = html.Div([
 analysis = html.Div([
     dbc.Button("Config", id="portfolio_optimizer-open_offcanvas", n_clicks=0),
     dcc.Store(id='portfolio_optimizer-results'),
+    graph_analysis,
 ])
 
 
@@ -119,7 +122,31 @@ def results(forecaster_name:str, optimizers_name:list[str], sport:str, zone:str,
             return {}
         
         dates = [int(f"20{dates[0]}"), int(f"20{dates[1]}")]
-        res =  api_provider.get_optimizer_backtest(sport, dates, forecaster_name, optimizers_name, zone, competitions)
+        res =  api_provider.get_optimizer_backtest(sport, dates, forecaster_name, optimizers_name, zone, competitions)["data"]
+        
         return res
     else:
         return {}
+    
+
+@callback(
+    Output(component_id='portfolio_historic', component_property='figure'),
+    [Input('portfolio_optimizer-results', 'data')]
+)
+def update_graph(jsonified_data):
+    data = {}
+    data["date"] = [r["date"] for r in jsonified_data]
+    for optimizer in list(jsonified_data[0]["rewards"].keys()):
+        rewards =  [r["rewards"][optimizer] for r in jsonified_data]
+        data[f"rewards_{optimizer}"] = rewards
+        portfolio = [1]
+        for r in rewards[:-1]:
+            portfolio.append(portfolio[-1]+r)
+        data[f"portfolio_{optimizer}"] = portfolio
+        
+
+    
+    df = pd.DataFrame(data)
+    fig = px.line(df, x="date", y="portfolio_dummy", title='Life expectancy in Canada')
+    
+    return fig
