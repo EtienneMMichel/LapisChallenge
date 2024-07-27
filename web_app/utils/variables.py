@@ -3,7 +3,7 @@ OPTIMIZER_MODELS = ["Dummy", "Kelly"]
 
 
 SPORTS = ["football", "basketball", "tennis"]
-ZONES = ["Europe", "France"]
+ZONES = ["","Europe", "France"]
 COMPETITIONS = ["Ligue 1"]
 
 

@@ -147,6 +147,6 @@ def update_graph(jsonified_data):
         data[f"portfolio_{optimizer}"] = portfolio
     
     df = pd.DataFrame(data)
-    fig = px.line(df, x="date", y="rewards_dummy", title='Life expectancy in Canada')
+    fig = px.line(df, x="date", y=[f"rewards_{optimizer}" for optimizer in optimizers_name], title='returns')
     
     return fig
