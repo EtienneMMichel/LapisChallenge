@@ -14,7 +14,7 @@ class OptimizerBacktester(Backtester):
         self.zone = zone
         self.competitions = competitions
         self.retrieve_dataset(sport, start_year, end_year, zone, competitions)
-        self.picker_model = picker.Dummy()
+        self.picker_model = picker.SingleMatch()
 
     def build_pred_input(self, match):
         return PredsBody(team_1_id=match["team_1_name"],

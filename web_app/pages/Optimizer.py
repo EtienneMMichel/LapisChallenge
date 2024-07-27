@@ -145,8 +145,6 @@ def update_graph(jsonified_data):
         for r in rewards[:-1]:
             portfolio.append(portfolio[-1]*(1+r))
         data[f"portfolio_{optimizer}"] = portfolio
-        
-
     
     df = pd.DataFrame(data)
     fig = px.line(df, x="date", y="rewards_dummy", title='Life expectancy in Canada')
