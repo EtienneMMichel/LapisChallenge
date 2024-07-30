@@ -3,6 +3,7 @@ import dash_bootstrap_components as dbc
 from dash import Input, Output, State, html, callback, dcc
 import pandas as pd
 import plotly.express as px
+import numpy as np
 
 from utils import api_provider
 from utils import FORECASTER_MODELS, OPTIMIZER_MODELS, SPORTS, MIN_YEAR, MAX_YEAR, ZONES, COMPETITIONS
@@ -28,76 +29,67 @@ data_selector = dbc.Form([
     html.Div(
     [
         dbc.Label("Zone"),
-        dcc.Dropdown(ZONES, ZONES[0], id='portfolio_optimizer-zones'),
+        dcc.Dropdown(ZONES, id='portfolio_optimizer-zones'),
     ],className="mb-3"),
 
     html.Div(
     [
         dbc.Label("Competition"),
-        dcc.Dropdown(COMPETITIONS, COMPETITIONS[0], id='portfolio_optimizer-competitions'),
+        dcc.Dropdown(COMPETITIONS, id='portfolio_optimizer-competitions'),
     ],className="mb-3"),
+
+    html.Div([
+        dbc.Label("Forecaster model"),
+        dcc.Dropdown(FORECASTER_MODELS, FORECASTER_MODELS[0], id='portfolio_optimizer-forecaster_selector'),
+    ],className="mb-3"),
+
+    html.Div([
+        dbc.Label("Optimizer models"),
+        dcc.Dropdown(OPTIMIZER_MODELS, OPTIMIZER_MODELS[0], id='portfolio_optimizer-optimizer_selector', multi=True),
+    ],className="mb-3"),
+
+    dbc.Button("Launch Analysis", id="portfolio_optimizer-launch_button", n_clicks=0, color="secondary", className="mb-3")
+
 ])
 
-forecaster_selector = html.Div([
-    dbc.Label("Forecaster model"),
-    dcc.Dropdown(FORECASTER_MODELS, FORECASTER_MODELS[0], id='portfolio_optimizer-forecaster_selector'),
-],className="mb-3")
-
-optimizer_selector = html.Div([
-    dbc.Label("Optimizer models"),
-    dcc.Dropdown(OPTIMIZER_MODELS, OPTIMIZER_MODELS[0], id='portfolio_optimizer-optimizer_selector', multi=True),
-],className="mb-3")
-
-launch_button = dbc.Button("Launch Analysis", id="portfolio_optimizer-launch_button", n_clicks=0, color="secondary", className="mb-3")
-
-offcanvas = html.Div(
-    [
-        
-        dbc.Offcanvas(
-            [html.P(
-                "This is the config section. "
-                "feel free to play with parameters. "
-                "Good analysis ;)"
-            ),
-            data_selector,
-            forecaster_selector,
-            optimizer_selector,
-            launch_button],
-            id="portfolio_optimizer-offcanvas",
-            title="Config",
-            is_open=False,
-        ),
-    ]
+controls = dbc.Card(
+    data_selector,
+    body=True,
 )
 
+analysis = dbc.Spinner(
+            [
+                dcc.Store(id='portfolio_optimizer-results'),
+                html.Div([dcc.Graph(id="portfolio_historic")]),
+                html.Hr(),
+                html.H4("REWARDS"),
+                html.Div(id="portfolio_optimizer-table-rewards"),
+                html.H4("GAIN"),
+                html.Div(id="portfolio_optimizer-table-gain"),
+                html.H4("REWARDS"),
+                html.Div(id="portfolio_optimizer-table-drawdown"),
+            ],
+            delay_show=100,
+        )
 
 
-graph_analysis = html.Div([
-        dcc.Graph(id='portfolio_historic'),
-        dcc.Graph(id='portfolio_exploitation'),
-    ], style={'display': 'inline-block', 'width': '49%'})
 
 
+layout = dbc.Container(
+            [
+                html.H1("Portfolio Optimization Backtesting"),
+                html.Hr(),
+                dbc.Row(
+                    [
+                        dbc.Col(controls, md=4),
+                        dbc.Col(analysis, md=8),
+                    ],
+                    # align="center",
+                ),
+            ],
+            fluid=True,
+        )
 
-analysis = html.Div([
-    dbc.Button("Config", id="portfolio_optimizer-open_offcanvas", n_clicks=0),
-    dcc.Store(id='portfolio_optimizer-results'),
-    graph_analysis,
-])
-
-
-layout = html.Div([offcanvas, analysis]) # add profil
-
-
-@callback(
-    Output("portfolio_optimizer-offcanvas", "is_open"),
-    Input("portfolio_optimizer-open_offcanvas", "n_clicks"),
-    [State("portfolio_optimizer-offcanvas", "is_open")],
-)
-def toggle_offcanvas(n1, is_open):
-    if n1:
-        return not is_open
-    return is_open
 
 
 
@@ -139,14 +131,105 @@ def update_graph(jsonified_data):
     optimizers_name = list(jsonified_data[0]["rewards"].keys())
     for optimizer in optimizers_name:
         rewards =  [r["rewards"][optimizer] for r in jsonified_data]
-        data[f"rewards_{optimizer}"] = rewards
+        data[optimizer] = rewards
 
-        portfolio = [1]
-        for r in rewards[:-1]:
-            portfolio.append(portfolio[-1]*(1+r))
-        data[f"portfolio_{optimizer}"] = portfolio
+        # portfolio = [1]
+        # for r in rewards[:-1]:
+        #     portfolio.append(portfolio[-1]*(1+r))
+        # data[f"portfolio_{optimizer}"] = portfolio
     
     df = pd.DataFrame(data)
-    fig = px.line(df, x="date", y=[f"rewards_{optimizer}" for optimizer in optimizers_name], title='returns')
-    
+
+    fig = px.line(df, x="date", y=optimizers_name, title='returns')
+    fig.update_layout(template="plotly_dark")
     return fig
+
+
+
+@callback(Output("portfolio_optimizer-table-rewards", "children"), [Input('portfolio_optimizer-results', 'data')])
+def make_table_rewards(jsonified_data):
+    data = {}
+    optimizers_name = list(jsonified_data[0]["rewards"].keys())
+    data["measures"] = ["mean",
+                        "median",
+                        "sharpe ratio",
+                        ]
+    for optimizer in optimizers_name:
+        rewards =  np.array([r["rewards"][optimizer] for r in jsonified_data])
+        rewards_mean = np.round(rewards.mean(),3)
+        rewards_median = np.round(np.median(rewards),3)
+        rewards_std =   rewards.std()
+        rewards_sharpe_ratio = np.round(rewards_mean/rewards_std,3)
+
+        gain = np.array(list(filter(lambda r: r>0, rewards)))
+        drawdown = np.array(list(filter(lambda r: r<0, rewards)))
+
+        data[optimizer] = [rewards_mean,
+                           rewards_median,
+                           rewards_sharpe_ratio,
+                           ]
+
+    df = pd.DataFrame(data)
+    return dbc.Table.from_dataframe(df, striped=True, bordered=False, hover=False, index=False)
+
+
+
+@callback(Output("portfolio_optimizer-table-gain", "children"), [Input('portfolio_optimizer-results', 'data')])
+def make_table_rewards(jsonified_data):
+    data = {}
+    optimizers_name = list(jsonified_data[0]["rewards"].keys())
+    data["measures"] = [
+                        "proportion",
+                        "mean",
+                        "max", 
+                        ]
+    for optimizer in optimizers_name:
+        rewards =  np.array([r["rewards"][optimizer] for r in jsonified_data])
+        rewards_mean = np.round(rewards.mean(),3)
+        rewards_median = np.round(np.median(rewards),3)
+        rewards_std =   rewards.std()
+        rewards_sharpe_ratio = np.round(rewards_mean/rewards_std,3)
+
+        gain = np.array(list(filter(lambda r: r>0, rewards)))
+        drawdown = np.array(list(filter(lambda r: r<0, rewards)))
+
+        data[optimizer] = [
+                           f"{np.round(len(gain)/len(rewards)*100,1)}%",
+                           np.round(gain.mean(),3),
+                           np.round(gain.max(),3),
+                           ]
+
+    df = pd.DataFrame(data)
+    return dbc.Table.from_dataframe(df, striped=True, bordered=False, hover=False, index=False, color="success")
+
+
+
+
+@callback(Output("portfolio_optimizer-table-drawdown", "children"), [Input('portfolio_optimizer-results', 'data')])
+def make_table_rewards(jsonified_data):
+    data = {}
+    optimizers_name = list(jsonified_data[0]["rewards"].keys())
+    data["measures"] = [
+                        "proportion",
+                        "mean",
+                        "max",
+                        ]
+    for optimizer in optimizers_name:
+        rewards =  np.array([r["rewards"][optimizer] for r in jsonified_data])
+        rewards_mean = np.round(rewards.mean(),3)
+        rewards_median = np.round(np.median(rewards),3)
+        rewards_std =   rewards.std()
+        rewards_sharpe_ratio = np.round(rewards_mean/rewards_std,3)
+
+        gain = np.array(list(filter(lambda r: r>0, rewards)))
+        drawdown = np.array(list(filter(lambda r: r<0, rewards)))
+
+        data[optimizer] = [
+                           f"{np.round(len(drawdown)/len(rewards)*100,1)}%",
+                           np.round(drawdown.mean(),3),
+                           np.round(drawdown.min(),3)
+                           
+                           ]
+
+    df = pd.DataFrame(data)
+    return dbc.Table.from_dataframe(df, striped=True, bordered=False, hover=False, index=False, color="danger")

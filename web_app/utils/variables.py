@@ -7,5 +7,5 @@ ZONES = ["","Europe", "France"]
 COMPETITIONS = ["Ligue 1"]
 
 
-MIN_YEAR = 0
+MIN_YEAR = 10
 MAX_YEAR = 24
