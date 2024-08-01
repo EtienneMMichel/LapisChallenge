@@ -6,7 +6,7 @@ from utils import GetDataBody, GetStatsBody, PredsBody, OptiBacktestBody
 
 from api import scrapper, stats, preds, backtester, optimizer
 
-
+from mangum import Mangum
 
 app = FastAPI(root_path="/prod")
 
@@ -61,6 +61,8 @@ async def get_optimizer_backtest(request:OptiBacktestBody) ->dict:
     res = {"data":res}
     return res
 
+
+handler = Mangum(app, lifespan="off")
 
 if __name__ == "__main__":
     uvicorn.run("app:app", port=5000, log_level="info")
