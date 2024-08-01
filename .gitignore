@@ -1,5 +1,10 @@
 DATA/*
 
+variables.tf
+terraform/.terraform
+terraform/.terraform.lock.hcl
+terraform/terraform.*
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
